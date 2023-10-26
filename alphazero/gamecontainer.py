@@ -1,4 +1,4 @@
-import game
+from alphazero.game import Game
 import numpy as np
 class GameContainer:
 
@@ -6,9 +6,9 @@ class GameContainer:
         self.state_history = []
         self.child_visits = []
         self.action_history = []
-        self.game = game.Game()
+        self.game = Game()
         #store the game state history with 8 timesteps (we will feed this to the neural network)
-        self.state= np.zeros((8,6,7), dtype=np.int8)
+        self.state = np.zeros((8,6,7), dtype=np.int8)
     
     def get_state(self):
         return self.state
@@ -19,4 +19,10 @@ class GameContainer:
 
     def update_state(self):
         self.state_history.append(self.game.board)
-        self.state = np.array(self.state_history[-8:])
+        #shape
+        self.state = np.vstack((self.game.board[np.newaxis, :], self.state[:-1]))
+
+    def get_moves(self):
+        return self.game.get_moves()
+    
+    
