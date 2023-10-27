@@ -38,36 +38,39 @@ class Game:
         self.check_winner()
 
     def check_winner(self):
-        # Check horizontal locations for winner
-        for row in range(6):
-            for col in range(4):
-                if abs(sum(self.board[row, col:col+4])) == 4:
-                    self.winner = self.board[row, col]
+        rows, cols = 6, 7
+        
+        # Check horizontal
+        for row in range(rows):
+            for col in range(cols - 3):
+                line_sum = sum(self.board[row][col:col+4])
+                if abs(line_sum) == 4:
+                    self.winner = self.board[row][col]
                     return
 
-        # Check vertical locations for winner
-        for col in range(7):
-            for row in range(3):
-                if abs(sum(self.board[row:row+4, col])) == 4:
-                    self.winner = self.board[row, col]
+        # Check vertical
+        for col in range(cols):
+            for row in range(rows - 3):
+                line_sum = self.board[row][col] + self.board[row+1][col] + self.board[row+2][col] + self.board[row+3][col]
+                if abs(line_sum) == 4:
+                    self.winner = self.board[row][col]
                     return
 
-        # Check positive sloped diagonals
-        for row in range(3):
-            for col in range(4):
-                if abs(self.board[row, col] + self.board[row+1, col+1] + self.board[row+2, col+2] + self.board[row+3, col+3]) == 4:
-                    self.winner = self.board[row, col]
-                    return
+        # Check diagonals
+        for row in range(rows - 3):
+            for col in range(cols - 3):
+                # Positive slope
+                pos_slope_sum = self.board[row][col] + self.board[row+1][col+1] + self.board[row+2][col+2] + self.board[row+3][col+3]
+                # Negative slope
+                neg_slope_sum = self.board[row+3][col] + self.board[row+2][col+1] + self.board[row+1][col+2] + self.board[row][col+3]
 
-        # Check negative sloped diagonals
-        for row in range(3, 6):
-            for col in range(4):
-                if abs(self.board[row, col] + self.board[row-1, col+1] + self.board[row-2, col+2] + self.board[row-3, col+3]) == 4:
-                    self.winner = self.board[row, col]
+                if abs(pos_slope_sum) == 4:
+                    self.winner = self.board[row][col]
+                    return
+                elif abs(neg_slope_sum) == 4:
+                    self.winner = self.board[row+3][col]
                     return
 
         if len(self.get_moves()) == 0:
             self.winner = 0
             return
-        
-        return

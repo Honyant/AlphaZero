@@ -5,30 +5,34 @@ import torch
 import numpy as np
 import time
 #test the game functions:
+net = AlphaZeroNet(board_area=6*7, num_actions=7, input_depth=8)
+
 def testGameplay():
-    net = AlphaZeroNet(board_area=6*7, num_actions=7, input_depth=8)
 
     gc = GameContainer()
     
     while not gc.game.terminal():
 
-        print(gc.game.board)
-        print("Player", gc.game.player, "to play.")
-        print("Possible moves:", gc.get_moves())
+        # print(gc.game.board)
+        # print("Player", gc.game.player, "to play.")
+        # print("Possible moves:", gc.get_moves())
         action_probs, value = net(torch.unsqueeze(torch.from_numpy(gc.get_state()*gc.game.get_player()).float(), 0))
         action_probs = action_probs.squeeze().detach().numpy()
         value = value.squeeze().detach().numpy()
+
+        #random:
+        #action_probs = np.random.rand(7)
+        #value = np.random.rand(1)
         possible_moves = gc.get_moves()
 
         #remove illegal moves by setting their probability to 0
         probs = remove_illegal_moves(action_probs, possible_moves)
         
-
         move = np.random.choice(np.arange(7), p=probs)
         gc.make_move(move)
-        print("Action probabilities:", action_probs)
-        print("Value:", value)
-    print(gc.game.board)
+        # print("Action probabilities:", action_probs)
+        # print("Value:", value)
+    # print(gc.game.board)
     if gc.game.get_winner() == 0:
         print("Draw!")
     else:
@@ -42,6 +46,6 @@ def remove_illegal_moves(action_probs, possible_moves):
     probs = probs / sum(probs)
     return probs
 
-for i in range(100):
+
+for i in range(1000):
     testGameplay()
-    time.sleep(1)
