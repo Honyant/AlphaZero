@@ -47,4 +47,4 @@ class Node:
 node = Node(1)
 node.add_child(2, 3)
 node.add_child(4, 5)
-print(node.children_to_string())
+print(node.children_to_string())/home/anthony/Documents/gpu_mandelbrot

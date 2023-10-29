@@ -1,51 +1,68 @@
-from alphazero.game import Game
-from alphazero.gamecontainer import GameContainer
-from alphazero.model import AlphaZeroNet
-import torch
 import numpy as np
-import time
-#test the game functions:
-net = AlphaZeroNet(board_area=6*7, num_actions=7, input_depth=8)
+import pytest
+from alphazero.game import Game
 
-def testGameplay():
+def test_initialization():
+    game = Game()
+    assert game.get_player() == 1
+    assert game.get_winner() is None
+    assert np.array_equal(game.board, np.zeros((6, 7), dtype=np.int8))
+    assert not game.terminal()
 
-    gc = GameContainer()
-    
-    while not gc.game.terminal():
+def test_set_board():
+    game = Game()
+    board = np.array([
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+    ], dtype=np.int8)
+    game.set_board(board)
+    assert game.get_winner() is None
+    assert game.get_player() == 1
 
-        # print(gc.game.board)
-        # print("Player", gc.game.player, "to play.")
-        # print("Possible moves:", gc.get_moves())
-        action_probs, value = net(torch.unsqueeze(torch.from_numpy(gc.get_state()*gc.game.get_player()).float(), 0))
-        action_probs = action_probs.squeeze().detach().numpy()
-        value = value.squeeze().detach().numpy()
+def test_get_moves():
+    game = Game()
+    assert set(game.get_moves()) == {0, 1, 2, 3, 4, 5, 6}
+    game.apply(0)
+    assert set(game.get_moves()) == {0, 1, 2, 3, 4, 5, 6}
 
-        #random:
-        #action_probs = np.random.rand(7)
-        #value = np.random.rand(1)
-        possible_moves = gc.get_moves()
+def test_terminal():
+    game = Game()
+    board = np.ones((6, 7), dtype=np.int8)
+    game.set_board(board)
+    assert game.terminal()
+    assert game.get_winner() == 0
 
-        #remove illegal moves by setting their probability to 0
-        probs = remove_illegal_moves(action_probs, possible_moves)
-        
-        move = np.random.choice(np.arange(7), p=probs)
-        gc.make_move(move)
-        # print("Action probabilities:", action_probs)
-        # print("Value:", value)
-    # print(gc.game.board)
-    if gc.game.get_winner() == 0:
-        print("Draw!")
-    else:
-        print("Player", gc.game.get_winner(), "wins!")
+def test_apply_and_winner():
+    game = Game()
+    for i in range(4):
+        game.apply(i)
+    assert game.get_winner() is None
+    game.apply(4)
+    assert game.get_winner() == 1
 
-def remove_illegal_moves(action_probs, possible_moves):
-    probs = np.zeros(7)
-    for move in possible_moves:
-        probs[move] = 1
-    probs = probs * action_probs
-    probs = probs / sum(probs)
-    return probs
+    game = Game()
+    for _ in range(3):
+        game.apply(0)
+        game.apply(1)
+    game.apply(0)
+    assert game.get_winner() == 1
 
+def test_diagonal_winner():
+    game = Game()
+    board = np.array([
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [-1, 0, 0, 0, 0, 0, 0],
+        [1, -1, 0, 0, 0, 0, 0],
+        [1, 1, -1, 0, 0, 0, 0],
+        [1, 1, 1, -1, 0, 0, 0],
+    ], dtype=np.int8)
+    game.set_board(board)
+    assert game.get_winner() == -1
 
-for i in range(1000):
-    testGameplay()
+if __name__ == "__main__":
+    pytest.main([__file__])

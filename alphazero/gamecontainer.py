@@ -13,6 +13,7 @@ class GameContainer:
     def get_state(self):
         return self.state
     
+    
     def make_move(self, move):
         self.game.apply(move)
         self.update_state()
