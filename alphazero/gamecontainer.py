@@ -13,7 +13,6 @@ class GameContainer:
     def get_state(self):
         return self.state
     
-    
     def make_move(self, move):
         self.game.apply(move)
         self.update_state()
@@ -26,4 +25,40 @@ class GameContainer:
     def get_moves(self):
         return self.game.get_moves()
     
+    def sample_move(self, action_probs, node, tau, c_puct):
+        #sum of all visit counts of children:
+
+        def modify_counts(counts):
+            return counts ** (1 / tau)
+
+        total_visits = sum(modify_counts(child.visits) for child in node.children)
+        for action, prob in enumerate(action_probs):
+            if action in self.get_moves():
+                node.add_child(self.game.board, action)
+                node.children[-1].probability = prob
+
+        def puct(node):
+            return node.mean_value + c_puct * node.probability * np.sqrt(total_visits) / (1 + node.visits)
+        
+        #get action with puct values:
+        puct_values = [puct(child) for child in node.children]
+        puct_values = np.array(puct_values)
+        puct_values = puct_values / sum(puct_values)
+
+        #add dirichlet noise:
+        noise = np.random.dirichlet([0.03] * len(puct_values))
+        puct_values = 0.75 * puct_values + 0.25 * noise
+
+        #get highest value:
+        action = np.argmax(puct_values)
+        #update state:
+        self.make_move(action)
+        return action
+
+
+    def run_mcts(self, mcts):
+        mcts.search(self)
+        self.child_visits.append(mcts.get_action_prob())
+        self.action_history.append(mcts.get_action())
+        mcts.reset()
     

@@ -112,8 +112,8 @@ def testParallelGameplay(num_processes, num_games=2):
 #     testGameplay()
 
 start = time.time()
-num_workers = 4096
-num_runs = 2
+num_workers = 256
+num_runs = 10
 total_time = testParallelGameplay(num_workers, num_runs)
 # start = time.time()
 # for i in range(num_runs*num_workers):
