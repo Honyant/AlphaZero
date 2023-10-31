@@ -1,11 +1,14 @@
 from alphazero.game import Game
 import numpy as np
+from alphazero.mcts import Node
+
 class GameContainer:
 
     def __init__(self):
         self.state_history = []
         self.child_visits = []
         self.action_history = []
+        self.value_history = []
         self.game = Game()
         #store the game state history with 8 timesteps (we will feed this to the neural network)
         self.state = np.zeros((8,6,7), dtype=np.int8)
@@ -53,12 +56,40 @@ class GameContainer:
         action = np.argmax(puct_values)
         #update state:
         self.make_move(action)
+        self.state_history.append(self.game.board)
+        self.action_history.append(action)
+        self.child_visits.append([child.visits for child in node.children])
+        self.value_history.append(node.mean_value)
         return action
 
+    def remove_illegal_moves(self,action_probs, possible_moves):
+        probs = np.zeros(7)
+        for move in possible_moves:
+            probs[move] = 1
+        probs = probs * action_probs
+        probs = probs / sum(probs)
+        return probs
 
-    def run_mcts(self, mcts):
-        mcts.search(self)
-        self.child_visits.append(mcts.get_action_prob())
-        self.action_history.append(mcts.get_action())
-        mcts.reset()
+    def find_leaf(self, root: Node, tau, c_puct, predictions):
+        node = root
+        while node.children:
+            predictions = self.remove_illegal_moves(predictions, np.arange(7))
+            action, node = self.sample_move(node.probability, node, tau=tau, c_puct=c_puct)
+            self.make_move(action)
+        return node
     
+
+    def backpropagate(self, node: Node, value):
+        while node:
+            node.update(value)
+            node = node.parent
+
+    def evaluate(self):
+        winner = self.game.get_winner()
+        return 0 if winner == None else winner
+    
+    def run_mcts(self, root: Node, num_simulations, tau, c_puct):
+        for _ in range(num_simulations):
+            leaf = self.find_leaf(root, tau, c_puct)
+            value = self.evaluate(leaf)
+            self.backpropagate(leaf, value)
