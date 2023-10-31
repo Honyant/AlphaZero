@@ -5,6 +5,7 @@ from alphazero.model import AlphaZeroNet
 import torch
 import numpy as np
 import time
+from alphazero.utils import remove_illegal_moves
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #test the game functions:
@@ -54,14 +55,6 @@ def make_move(move: np.array, gc: GameContainer):# on the cpu side, we will para
     move = np.random.choice(np.arange(7), p=probs)
     gc.make_move(move)
     return (gc.game.get_winner(), gc)
-
-def remove_illegal_moves(action_probs, possible_moves):
-    probs = np.zeros(7)
-    for move in possible_moves:
-        probs[move] = 1
-    probs = probs * action_probs
-    probs = probs / sum(probs)
-    return probs
 
 def testParallelGameplay(num_processes, num_games=2):
     #create a game container for each process

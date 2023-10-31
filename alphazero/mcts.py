@@ -45,13 +45,13 @@ class Node:
         return s
 
 #testing:
-root = Node(1, action=0)
-root.add_child(2, 'a')
-root.add_child(3, 'b')
-children = root.children
-children[0].add_child(4, 'g')
-children[0].add_child(5, 'h')
-children[1].add_child(6, 'i')
+# root = Node(1, action=0)
+# root.add_child(2, 'a')
+# root.add_child(3, 'b')
+# children = root.children
+# children[0].add_child(4, 'g')
+# children[0].add_child(5, 'h')
+# children[1].add_child(6, 'i')
 
-print(root.children_to_string())
-print(root.tree_to_string(0))
+# print(root.children_to_string())
+# print(root.tree_to_string(0))

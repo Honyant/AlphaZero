@@ -7,6 +7,7 @@ import torch
 from alphazero.dataset import AlphaZeroDataset
 from alphazero.train import train
 from alphazero.utils import remove_illegal_moves
+
 # Set up hyperparameters
 tau = 1
 c_puct = 4
