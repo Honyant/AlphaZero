@@ -6,7 +6,7 @@ from game import step
 from rich.progress import Progress
 
 mcts_hyperparams = {
-        'iterations': 100,
+        'iterations': 25,
         'c_puct': 1.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -18,8 +18,10 @@ training_hyperparams = {
     'l2_reg': 0.01,
     'batch_size': 64,
     'num_train_iter': 1,
-    'num_episodes' : 1000,
-    'num_episodes_per_train': 100
+    'num_episodes' : 100,
+    'num_episodes_per_train': 10,
+    'device': torch.device('cpu')
+
 }
 
 def train():
@@ -34,13 +36,14 @@ def train():
                 starting_player = 1 if np.random.rand() < 0.5 else -1
                 training_buffer.extend(run_episode(net, starting_player, mcts_hyperparams))
             train_network(net, training_buffer, training_hyperparams)
+    torch.save(net.state_dict(), 'model.pth')
 
 def train_network(network, training_buffer, hyperparams : dict):
     optimizer = torch.optim.Adam(network.parameters(), lr=hyperparams['lr'])
     for _ in range(hyperparams['num_train_iter']):
-        batch = training_buffer[np.random.choice(len(training_buffer), hyperparams['batch_size'], replace=False)]
-        #batch should be a list of tuples
-        states, search_policies, values = [list(x) for x in zip(*batch)]
+        indices = np.random.choice(len(training_buffer), hyperparams['batch_size'], replace=False)
+        batch = [training_buffer[i] for i in indices]       #batch should be a list of tuples
+        states, search_policies, values = [np.array(x) for x in zip(*batch)]
         states = torch.Tensor(states).to(hyperparams['device']).unsqueeze(1)
         search_policies = torch.Tensor(search_policies).to(hyperparams['device'])
         values = torch.Tensor(values).to(hyperparams['device'])
@@ -76,7 +79,9 @@ def run_episode(network, starting_player, hyperparams : dict):
         # print(board)
         
         states.append(board)
-        search_policies.append(policy)
+        complete_policy = np.zeros(7)
+        complete_policy[actions] = policy
+        search_policies.append(complete_policy)
         
         cur_player *= -1
         board *= -1
