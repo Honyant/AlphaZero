@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -14,6 +16,8 @@ class ResidualBlock(nn.Module):
         y = F.relu(self.bn1(self.conv1(x)))
         y = self.bn2(self.conv2(y))
         return F.relu(x + y)
+
+
 class ResidualTower(nn.Module):
     def __init__(self, channels, blocks):
         super().__init__()
@@ -21,6 +25,7 @@ class ResidualTower(nn.Module):
 
     def forward(self, x):
         return self.blocks(x)
+
 
 class InputConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -30,7 +35,8 @@ class InputConvBlock(nn.Module):
 
     def forward(self, x):
         return F.relu(self.bn(self.conv(x)))
-    
+
+
 class PolicyHead(nn.Module):
     def __init__(self, in_channels, middle_channels, num_actions, board_area):
         super().__init__()
@@ -42,6 +48,7 @@ class PolicyHead(nn.Module):
         y = F.relu(self.bn(self.conv(x)))
         y = y.view(y.size(0), -1)
         return F.softmax(self.fc(y), dim=1)
+
 
 class ValueHead(nn.Module):
     def __init__(self, in_channels, middle_channels, board_area, intermediate_dim=64):
@@ -56,23 +63,47 @@ class ValueHead(nn.Module):
         y = y.view(y.size(0), -1)
         y = F.relu(self.fc1(y))
         return torch.tanh(self.fc2(y))
-    
+
+
 class AlphaZeroNet(nn.Module):
-    def __init__(self, board_area, num_actions, input_depth, blocks=2, conv_channels=8, head_channels=8, policy_channels=2, value_channels=1):
+    def __init__(self, board_area, num_actions, input_depth, blocks=1, conv_channels=1, head_channels=1,
+                 policy_channels=1, value_channels=1):
         super().__init__()
         self.input_conv = InputConvBlock(input_depth, conv_channels)
         self.residual_tower = ResidualTower(conv_channels, blocks)
         self.policy_head = PolicyHead(head_channels, policy_channels, num_actions, board_area)
         self.value_head = ValueHead(head_channels, value_channels, board_area)
+
     def forward(self, x):
         y = self.input_conv(x)
         y = self.residual_tower(y)
         return self.policy_head(y), self.value_head(y)
-    
+
+
 def get_policy_and_value(net: AlphaZeroNet, board: np.array, hyperparams: dict) -> int:
-    policy, value = net(torch.Tensor(board).unsqueeze(0).unsqueeze(0).to(hyperparams['device']))
+    policy, value = net(torch.Tensor(board.flatten()).unsqueeze(0).to(hyperparams['device']))
     policy = policy.detach().cpu().numpy().flatten()
     value = value.detach().cpu().numpy().flatten().item()
-    policy = (policy * (1-np.abs(board[0])))
+    policy = (policy * (1 - np.abs(board[0])))
     policy = policy[policy != 0] / np.sum(policy)
     return policy, value
+
+
+class DummyAlphaZeroNet(nn.Module):
+    def __init__(self, n_hidden, hidden_size, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        layers = []
+        for i in range(n_hidden):
+            layers.append(nn.LazyLinear(n_hidden))
+            layers.append(nn.ReLU())
+
+        self.net = nn.Sequential(*layers)
+        self.value_head = nn.LazyLinear(1)
+        self.policy_head = nn.LazyLinear(7)
+
+    def forward(self, x):
+        z = self.net(x)
+        v = self.value_head(z)
+        p = self.policy_head(z)
+
+        return F.softmax(p), F.tanh(v)
