@@ -1,5 +1,7 @@
 from typing import Tuple
 import numpy as np
+from numba import jit
+
 
 def step(board: np.array, move: int) -> Tuple[int, bool]: # reward, done
     for i in range(5, -1, -1):
@@ -7,11 +9,13 @@ def step(board: np.array, move: int) -> Tuple[int, bool]: # reward, done
             board[i][move] = 1 # you are always the player
             break
     winner, terminal = winner_and_terminal(board)
-    return winner, terminal
-    
+    return (winner, terminal)
+
+@jit(nopython=True)
 def get_valid_moves(board: np.array) -> np.array:
     return np.where(board[0] == 0)[0]
 
+@jit(nopython=True)
 def get_winner(board: np.array) -> int:
     rows, cols = board.shape
     # Check horizontal

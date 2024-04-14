@@ -3,12 +3,14 @@ import torch
 import numpy as np
 from mcts import Node, mcts_search
 from game import step
+from rich.progress import Progress
 
 mcts_hyperparams = {
         'iterations': 100,
         'c_puct': 1.0,
         'tau': 1,
-        'device': torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+        'device': torch.device('cpu')
+        #'mps' if torch.backends.mps.is_available() else 
 }
 
 training_hyperparams = {
@@ -23,14 +25,15 @@ training_hyperparams = {
 def train():
     training_buffer = []
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=1).to(mcts_hyperparams['device'])
-    for ep in range(int(training_hyperparams['num_episodes']/training_hyperparams['num_episodes_per_train'])):
-        training_buffer.clear()
-        for _ in range(training_hyperparams['num_episodes_per_train']):
-            if ep % 1 == 0:
-                print(f"Episode {ep}")
-            starting_player = 1 if np.random.rand() < 0.5 else -1
-            training_buffer.extend(run_episode(net, starting_player, mcts_hyperparams))
-        train_network(net, training_buffer, training_hyperparams)
+    with Progress() as progress:
+        task = progress.add_task("[red]Training...", total=training_hyperparams['num_episodes'])
+        for _ in range(int(training_hyperparams['num_episodes']/training_hyperparams['num_episodes_per_train'])):
+            training_buffer.clear()
+            for _ in range(training_hyperparams['num_episodes_per_train']):
+                progress.update(task, advance=1)
+                starting_player = 1 if np.random.rand() < 0.5 else -1
+                training_buffer.extend(run_episode(net, starting_player, mcts_hyperparams))
+            train_network(net, training_buffer, training_hyperparams)
 
 def train_network(network, training_buffer, hyperparams : dict):
     optimizer = torch.optim.Adam(network.parameters(), lr=hyperparams['lr'])
