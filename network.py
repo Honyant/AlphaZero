@@ -69,3 +69,4 @@ class AlphaZeroNet(nn.Module):
         y = self.input_conv(x)
         y = self.residual_tower(y)
         return self.policy_head(y), self.value_head(y)
+    

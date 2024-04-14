@@ -46,4 +46,4 @@ def get_winner(board: np.array) -> int:
 def winner_and_terminal(board: np.array) -> Tuple[int, bool]:
     full_board = len(get_valid_moves(board)) == 0
     winner = get_winner(board)
-    return winner, winner != None or full_board
+    return 0 if winner == None else 1, winner != None or full_board

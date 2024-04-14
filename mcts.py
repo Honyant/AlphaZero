@@ -26,7 +26,7 @@ class Node:
         action = self.edges[action_idx, 4].astype(int)
         board *= -1
         step(board, action)
-        print(np.sum(np.abs(board)))
+        # print(np.sum(np.abs(board)))
         return self.children[action_idx].select(board, c_puct)
         
     def expand(self, prior_dist: np.array, actions: np.array) -> None:
@@ -46,17 +46,16 @@ class Node:
     
     def get_search_policy(self, tau: float) -> np.array:
         N = self.edges[:, 0]
-        return N**(1/tau) / np.sum(N**(1/tau))
-        
+        return N**(1/tau) / np.sum(N**(1/tau)), self.edges[:, 4].astype(int)
     
-def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict) -> np.array: # policy
+def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict) -> Tuple[np.array, np.array]:
     for _ in range(hyperparams['iterations']):
         board_copy = np.copy(board)
         leaf = root.select(board_copy, hyperparams['c_puct'])
         winner, terminal = winner_and_terminal(board_copy)
         if not terminal:
             policy, value = net(torch.Tensor(board_copy).to(hyperparams['device']).unsqueeze(0).unsqueeze(0))
-            policy, value = policy.detach().numpy().flatten(), value.detach().numpy().flatten().item() # go inside network
+            policy, value = policy.detach().cpu().numpy().flatten(), value.detach().cpu().numpy().flatten().item() # go inside network
             #mask policy
             policy = (policy * (1-np.abs(board_copy[0])))
             policy = policy[policy != 0] / np.sum(policy)
@@ -65,28 +64,3 @@ def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dic
         else:
             leaf.backpropagate(winner)
     return root.get_search_policy(hyperparams['tau'])
-
-
-    
-def main():
-    hyperparams = {
-        'iterations': 1000,
-        'c_puct': 1.0,
-        'tau': 1,
-        'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    }
-    net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=1)
-    board = np.zeros((6,7))
-    
-    root = Node(None, None)
-    # almost winning
-    board = np.array([[0,0,0,0,0,0,0],
-                      [0,0,0,0,0,0,0],
-                      [1,0,0,0,0,0,0],
-                      [-1,1,0,0,0,0,0],
-                      [-1,-1,0,0,0,0,0],
-                      [-1,-1,1,0,0,0,0]])
-    policy = mcts_search(board, root, net, hyperparams)
-    print(policy)
-    
-main()
