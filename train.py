@@ -16,12 +16,11 @@ mcts_hyperparams = {
 training_hyperparams = {
     'lr': 0.01,
     'l2_reg': 0.01,
-    'batch_size': 64,
+    'batch_size': 256,
     'num_train_iter': 1,
-    'num_episodes' : 100,
-    'num_episodes_per_train': 10,
-    'device': torch.device('cpu')
-
+    'num_episodes' : 10000,
+    'num_episodes_per_train': 50,
+    'device': torch.device('cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
 
 def train():
@@ -39,6 +38,8 @@ def train():
     torch.save(net.state_dict(), 'model.pth')
 
 def train_network(network, training_buffer, hyperparams : dict):
+    network.train()
+    network.to(hyperparams['device'])
     optimizer = torch.optim.Adam(network.parameters(), lr=hyperparams['lr'])
     for _ in range(hyperparams['num_train_iter']):
         indices = np.random.choice(len(training_buffer), hyperparams['batch_size'], replace=False)
@@ -56,19 +57,16 @@ def train_network(network, training_buffer, hyperparams : dict):
         loss = policy_loss + value_loss + hyperparams['l2_reg'] * regularization_loss
         loss.backward()
         optimizer.step()
-    
-
+    network.to(torch.device('cpu'))
+    network.eval()
 
 def run_episode(network, starting_player, hyperparams : dict):
     root = Node(None, None)
     board = np.zeros((6,7))
-    
     done = False
-    
     states = []
     search_policies = []
     final_value = 0
-    
     cur_player = starting_player
     
     while not done:
@@ -76,8 +74,6 @@ def run_episode(network, starting_player, hyperparams : dict):
         action_idx = np.random.choice(len(actions), p=policy)
         final_value, done = step(board, actions[action_idx])
         root = root.children[action_idx]
-        # print(board)
-        
         states.append(board)
         complete_policy = np.zeros(7)
         complete_policy[actions] = policy
