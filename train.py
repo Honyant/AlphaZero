@@ -2,7 +2,7 @@ from network import AlphaZeroNet, DummyAlphaZeroNet
 import torch
 import numpy as np
 from mcts import Node, mcts_search
-from game import step
+from game import step, print_board
 from rich.progress import Progress
 import wandb
 
@@ -63,7 +63,8 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict):
 
         optimizer.zero_grad()
         policy, value_pred = network(states)
-        # print(states[:5], value_pred[:5], search_policies[:5], values_gt[:5])
+        print_board(states[:5].squeeze().detach().cpu().numpy())
+        print(value_pred[:5], search_policies[:5], values_gt[:5])
         policy_loss = -torch.mean(torch.sum(search_policies * torch.log(policy), dim=1))
         value_loss = torch.mean((values_gt - value_pred) ** 2)
         loss = policy_loss + value_loss

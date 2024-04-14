@@ -1,7 +1,7 @@
 from typing import Tuple
 import numpy as np
 from numba import jit
-
+from termcolor import colored
 
 def step(board: np.array, move: int) -> Tuple[int, bool]: # reward, done
     for i in range(5, -1, -1):
@@ -51,3 +51,37 @@ def winner_and_terminal(board: np.array) -> Tuple[int, bool]:
     full_board = len(get_valid_moves(board)) == 0
     winner = get_winner(board)
     return 0 if winner == None else 1, winner != None or full_board
+
+def print_board(board):
+    
+    # Define colors for each player
+    colors = {
+        -1.0: 'red',
+        0.0: 'white',
+        1.0: 'yellow'
+    }
+    # if there are multiple boards, print them all
+    if len(board.shape) == 3:
+        rows, cols = board.shape[:2]
+        for b in range(board.shape[0]):
+            print(f'Board {b+1}')
+            for row in range(rows):
+                for col in range(cols):
+                    value = board[b][row][col]
+                    color = colors[value]
+                    piece = '●'
+                    print(colored(piece, color), end=' ')
+                print()
+            print()
+        return
+    # Print the board with colors
+    rows, cols = board.shape
+    for row in range(rows):
+        for col in range(cols):
+            value = board[row][col]
+            color = colors[value]
+            piece = '●'
+            print(colored(piece, color), end=' ')
+        print()
+    
+
