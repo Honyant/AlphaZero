@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Tuple
 import numpy as np
 from game import *
-from network import AlphaZeroNet
+from network import AlphaZeroNet, get_policy_and_value
 import torch
 
  
@@ -49,17 +49,16 @@ class Node:
         return N**(1/tau) / np.sum(N**(1/tau)), self.edges[:, 4].astype(int)
     
 def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict) -> Tuple[np.array, np.array]:
+    if root.leaf:
+        policy, value = get_policy_and_value(net, board, hyperparams)
+        root.expand(policy, get_valid_moves(board))
     for _ in range(hyperparams['iterations']):
         board_copy = np.copy(board)
         leaf = root.select(board_copy, hyperparams['c_puct'])
         winner, terminal = winner_and_terminal(board_copy)
         if not terminal:
-            policy, value = net(torch.Tensor(board_copy).to(hyperparams['device']).unsqueeze(0).unsqueeze(0))
-            policy, value = policy.detach().cpu().numpy().flatten(), value.detach().cpu().numpy().flatten().item() # go inside network
-            #mask policy
-            policy = (policy * (1-np.abs(board_copy[0])))
-            policy = policy[policy != 0] / np.sum(policy)
-            leaf.expand(policy.flatten(), get_valid_moves(board_copy))
+            policy, value = get_policy_and_value(net, board_copy, hyperparams)
+            leaf.expand(policy, get_valid_moves(board_copy))
             leaf.backpropagate(value)
         else:
             leaf.backpropagate(winner)

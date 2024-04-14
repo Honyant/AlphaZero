@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import numpy as np
 class ResidualBlock(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -55,18 +55,24 @@ class ValueHead(nn.Module):
         y = F.relu(self.bn(self.conv(x)))
         y = y.view(y.size(0), -1)
         y = F.relu(self.fc1(y))
-        return torch.sigmoid(self.fc2(y))
+        return torch.tanh(self.fc2(y))
     
 class AlphaZeroNet(nn.Module):
-    def __init__(self, board_area, num_actions, input_depth, blocks=2, conv_channels=32, head_channels=32, policy_channels=2, value_channels=1):
+    def __init__(self, board_area, num_actions, input_depth, blocks=2, conv_channels=8, head_channels=8, policy_channels=2, value_channels=1):
         super().__init__()
         self.input_conv = InputConvBlock(input_depth, conv_channels)
         self.residual_tower = ResidualTower(conv_channels, blocks)
         self.policy_head = PolicyHead(head_channels, policy_channels, num_actions, board_area)
         self.value_head = ValueHead(head_channels, value_channels, board_area)
-
     def forward(self, x):
         y = self.input_conv(x)
         y = self.residual_tower(y)
         return self.policy_head(y), self.value_head(y)
     
+def get_policy_and_value(net: AlphaZeroNet, board: np.array, hyperparams: dict) -> int:
+    policy, value = net(torch.Tensor(board).unsqueeze(0).unsqueeze(0).to(hyperparams['device']))
+    policy = policy.detach().cpu().numpy().flatten()
+    value = value.detach().cpu().numpy().flatten().item()
+    policy = (policy * (1-np.abs(board[0])))
+    policy = policy[policy != 0] / np.sum(policy)
+    return policy, value
