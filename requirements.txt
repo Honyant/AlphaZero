@@ -3,3 +3,4 @@ torch
 numba
 wandb
 tqdm
+rich

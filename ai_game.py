@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 25,
+        'iterations': 100,
         'c_puct': 1.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -31,6 +31,7 @@ def human_play(network, starting_player, hyperparams : dict):
             # AI player's turn
             root = Node(None, None)
             policy, actions = mcts_search(board, root, network, hyperparams)
+            print(policy)
             action_idx = np.random.choice(len(actions), p=policy)
             action = actions[action_idx]
         
