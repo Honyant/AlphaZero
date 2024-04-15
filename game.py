@@ -62,7 +62,7 @@ def print_board(board):
     }
     # if there are multiple boards, print them all
     if len(board.shape) == 3:
-        rows, cols = board.shape[:2]
+        rows, cols = board.shape[1:]
         for b in range(board.shape[0]):
             print(f'Board {b+1}')
             for row in range(rows):

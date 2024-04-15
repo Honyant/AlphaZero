@@ -66,8 +66,7 @@ class ValueHead(nn.Module):
 
 
 class AlphaZeroNet(nn.Module):
-    def __init__(self, board_area, num_actions, input_depth, blocks=1, conv_channels=1, head_channels=1,
-                 policy_channels=1, value_channels=1):
+    def __init__(self, board_area, num_actions, input_depth, blocks=5, conv_channels=4, head_channels=4, policy_channels=4, value_channels=4):
         super().__init__()
         self.input_conv = InputConvBlock(input_depth, conv_channels)
         self.residual_tower = ResidualTower(conv_channels, blocks)
@@ -80,8 +79,19 @@ class AlphaZeroNet(nn.Module):
         return self.policy_head(y), self.value_head(y)
 
 
+def convert_array_torch(arr):
+    if type(arr) == np.ndarray:
+        arr = torch.tensor(arr)
+    result = torch.zeros((arr.shape[0], 2, 6, 7), dtype=torch.float32).to(arr.device)
+    
+    result[:, 0] = (arr == 1).squeeze(1)
+    result[:, 1] = (arr == -1).squeeze(1)
+    
+    return result
+
 def get_policy_and_value(net: AlphaZeroNet, board: np.array, hyperparams: dict) -> int:
-    policy, value = net(torch.Tensor(board.flatten()).unsqueeze(0).to(hyperparams['device']))
+    # policy, value = net(torch.Tensor(board.flatten()).unsqueeze(0).to(hyperparams['device']))
+    policy, value = net(convert_array_torch(torch.Tensor(board).unsqueeze(0).unsqueeze(0).to(hyperparams['device'])))
     policy = policy.detach().cpu().numpy().flatten()
     value = value.detach().cpu().numpy().flatten().item()
     policy = (policy * (1 - np.abs(board[0])))

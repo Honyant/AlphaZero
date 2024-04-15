@@ -1,11 +1,11 @@
 import numpy as np
 from mcts import Node, mcts_search
-from game import step
+from game import step, print_board
 import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 1000,
+        'iterations': 100,
         'c_puct': 1.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -19,7 +19,8 @@ def human_play(network, starting_player, hyperparams : dict):
     
     while not done:
         if cur_player == 1:
-            print(board.astype(int))
+            # print(board.astype(int))
+            print_board(board)
             # Human player's turn
             while True:
                 action = int(input("Enter your move (0-6): "))
@@ -41,7 +42,7 @@ def human_play(network, starting_player, hyperparams : dict):
             break
         cur_player *= -1
         board *= -1
-    print(board.astype(int))
+    print_board(board)
     if cur_player == 1:
         print("Player 1 wins!")
     elif cur_player == -1:
@@ -51,8 +52,8 @@ def human_play(network, starting_player, hyperparams : dict):
 
 if __name__ == "__main__":
     # Load the trained model
-    net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=1).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('model.pth'))
+    net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
+    net.load_state_dict(torch.load('model_0.pth'))
     net.eval()
     
     # Start the game
