@@ -4,3 +4,4 @@ numba
 wandb
 tqdm
 rich
+termcolor
