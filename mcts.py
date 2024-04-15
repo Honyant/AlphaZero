@@ -4,8 +4,8 @@ import numpy as np
 from game import *
 from network import AlphaZeroNet, get_policy_and_value
 import torch
-
  
+
 class Node:
     def __init__(self, parent: Node, action_idx: int) -> None:
         self.children = []
@@ -24,9 +24,8 @@ class Node:
         q_arr = self.edges[:,3]
         action_idx = np.argmax(q_arr + ucb_arr)
         action = self.edges[action_idx, 4].astype(int)
-        board *= -1
         step(board, action)
-        # print(np.sum(np.abs(board)))
+        board *= -1
         return self.children[action_idx].select(board, c_puct)
         
     def expand(self, prior_dist: np.array, actions: np.array) -> None:
@@ -57,7 +56,14 @@ def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dic
         leaf = root.select(board_copy, hyperparams['c_puct'])
         winner, terminal = winner_and_terminal(board_copy)
         if not terminal:
-            policy, value = get_policy_and_value(net, board_copy, hyperparams)
+            use_model = True
+            if use_model:
+                policy, value = get_policy_and_value(net, board_copy, hyperparams)
+            else:
+                policy, value = np.ones(7) / 7, 0
+                policy = (policy * (1 - np.abs(board_copy[0])))
+                policy = policy[policy != 0] / np.sum(policy)
+            
             leaf.expand(policy, get_valid_moves(board_copy))
             leaf.backpropagate(value)
         else:
