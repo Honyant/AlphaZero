@@ -7,7 +7,7 @@ from rich.progress import Progress
 import wandb
 
 mcts_hyperparams = {
-    'iterations': 25,
+    'iterations': 200,
     'c_puct': 4.0,
     'tau': 1,
     'device': torch.device('cpu')
@@ -51,7 +51,8 @@ def train():
             if len(training_buffer) > 10000:
                 training_buffer = training_buffer[-10000:]
             train_network(net, optimizer, training_buffer, training_hyperparams)
-            torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
+            if i % 100 == 0:
+                torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
 
     if USE_WANDB:
         wandb.finish()
@@ -81,8 +82,7 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict):
         optimizer.step()
 
         # Print the losses using rich
-        print(
-            f"[blue]Policy Loss:[/blue] {policy_loss.item():.4f}, [blue]Value Loss:[/blue] {value_loss.item():.4f}, [blue]Total Loss:[/blue] {loss.item():.4f}")
+        # print( f"[blue]Policy Loss:[/blue] {policy_loss.item():.4f}, [blue]Value Loss:[/blue] {value_loss.item():.4f}, [blue]Total Loss:[/blue] {loss.item():.4f}")
 
         # Log the losses using wandb
         if USE_WANDB:
@@ -124,18 +124,5 @@ def run_episode(network, hyperparams: dict):
     values = list(values * final_value)
     return (zip(states, search_policies, values))
 
-
 if __name__ == "__main__":
     train()
-
-    # while not done:
-    # policy, actions = mcts_search(board, root, network, hyperparams)
-    # action_idx = np.random.choice(len(actions), p=policy)
-    # final_value, done = step(board, actions[action_idx])
-    # root = root.children[action_idx]
-    # # print(board)
-
-    # states.append(board)
-    # complete_policy = np.zeros(7)
-    # complete_policy[actions] = policy
-    # search_policies.append(complete_policy)
