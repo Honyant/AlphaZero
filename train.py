@@ -5,9 +5,9 @@ from mcts import Node, mcts_search
 from game import step, print_board
 from rich.progress import Progress
 import wandb
-
+from eval import evaluate_model
 mcts_hyperparams = {
-    'iterations': 200,
+    'iterations': 1000,
     'c_puct': 4.0,
     'tau': 1,
     'device': torch.device('cpu')
@@ -17,10 +17,13 @@ mcts_hyperparams = {
 training_hyperparams = {
     'lr': 0.01,
     'l2_reg': 0.01,
-    'batch_size': 1024,
+    'batch_size': 512,
     'num_train_iter': 1,
-    'num_episodes': 10000,
-    'num_episodes_per_train': 4,
+    'num_episodes': 2000,
+    'num_episodes_per_train': 3,
+    'num_episodes_per_eval': 100,
+    'num_eval_games': 30,
+    'num_episodes_per_save': 100,
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
@@ -30,36 +33,40 @@ def train():
     training_buffer = []
     if USE_WANDB:
         wandb.init(project="alphazero_connect4", config=training_hyperparams)
+        print(wandb.run.name)
 
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    # net = DummyAlphaZeroNet(3, 16).to(mcts_hyperparams['device'])
     optimizer = torch.optim.Adam(net.parameters(), lr=training_hyperparams['lr'],
                                  weight_decay=training_hyperparams['l2_reg'])
     
     total_episodes = training_hyperparams['num_episodes']
     episodes_per_train = training_hyperparams['num_episodes_per_train']
-    num_trains = int(total_episodes / episodes_per_train)
+    episodes_per_eval = training_hyperparams['num_episodes_per_eval']
+    episodes_per_save = training_hyperparams['num_episodes_per_save']
 
     with Progress() as progress:
         task = progress.add_task("[red]Training...", total=total_episodes)
-        for i in range(num_trains):
-            # training_buffer.clear()
-            for j in range(episodes_per_train):
-                current_episode = i * episodes_per_train + j + 1
-                progress.update(task, advance=1, description=f"[red]Training... (Episode {current_episode}/{total_episodes})")
-                training_buffer.extend(run_episode(net, mcts_hyperparams))
+        for episode in range(1, total_episodes + 1):
+            progress.update(task, advance=1, description=f"[red]Training... (Episode {episode}/{total_episodes})")
+            training_buffer.extend(run_episode(net, mcts_hyperparams))
             if len(training_buffer) > 10000:
                 training_buffer = training_buffer[-10000:]
-            train_network(net, optimizer, training_buffer, training_hyperparams)
-            if (i+1) % 50 == 0:
-                torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
+            if episode % episodes_per_train == 0 or episode == total_episodes:
+                train_network(net, optimizer, training_buffer, training_hyperparams, episode)
+            if episode % episodes_per_eval == 0 or episode == total_episodes:
+                win_rate = evaluate_model(net, training_hyperparams['num_eval_games'])
+                if USE_WANDB:
+                    wandb.log({"Win Rate": win_rate}, step=episode)
+            # Save the model at specific intervals
+            if episode % episodes_per_save == 0 or episode == total_episodes:
+                torch.save(net.state_dict(), f'model_{wandb.run.name.replace("-", "_") if wandb.run else 0}.pth')
 
-    torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
+    torch.save(net.state_dict(), f'model_{wandb.run.name.replace("-", "_") if wandb.run else 0}.pth')
     if USE_WANDB:
         wandb.finish()
 
 
-def train_network(network, optimizer, training_buffer, hyperparams: dict):
+def train_network(network, optimizer, training_buffer, hyperparams: dict, episode):
     network.train()
     network.to(hyperparams['device'])
     for _ in range(hyperparams['num_train_iter']):
@@ -91,7 +98,7 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict):
                 "Policy Loss": policy_loss.item(),
                 "Value Loss": value_loss.item(),
                 "Total Loss": loss.item()
-            })
+            }, step=episode)
 
     network.to(torch.device('cpu'))
     network.eval()

@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 1000,
+        'iterations': 200,
         'c_puct': 4.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -46,18 +46,17 @@ def game(net): # returns if the ai won or not
     result = human_play(net, starting_player, mcts_hyperparams)
     return 0.5 if result == 0 else int(-starting_player == result)
 
-def eval(model_name='model_jt9aifq5.pth', games=100):
-    # Load the trained model
-    net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load(model_name))
-    net.eval()
+def evaluate_model(model, games):
+    model.eval()
     stats = []
     for _ in range(games):
-        stats.append(game(net))
+        stats.append(game(model))
         print(stats[-1])
     print(mcts_hyperparams)
-    print(f'AI won {sum(stats)} out of {games} games.')
+    model.train()
     return sum(stats) / games
 
 if __name__ == "__main__":
-    eval(model_name='model_jt9aifq5.pth', games=30)
+    net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
+    net.load_state_dict(torch.load('model_hondhzd7.pth'))
+    print(f'Win rate: {evaluate_model(net, 100)}')

@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 250,
+        'iterations': 1000,
         'c_puct': 4.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -37,7 +37,7 @@ def human_play(network, starting_player, hyperparams : dict):
             # AI player's turn
             root = Node(None, None)
             # print(board)
-            policy, actions = mcts_search(board, root, network, hyperparams)
+            policy, actions = mcts_search(board, root, network, hyperparams, use_model=False)
             print(policy)
             action_idx = np.argmax(policy)
             action = actions[action_idx]
@@ -60,11 +60,11 @@ if __name__ == "__main__":
     # Load the trained model
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
     
-    net.load_state_dict(torch.load('model_jt9aifq5.pth'))
+    net.load_state_dict(torch.load('model_hondhzd7.pth'))
     net.eval()
     # Start the game
     # starting_player = 1 if np.random.rand() < 0.5 else -1
-    starting_player = -1
+    starting_player = 1
     if starting_player == 1:
         print("You are player 1.")
     else:

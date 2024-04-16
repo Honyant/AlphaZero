@@ -28,7 +28,7 @@ class Node:
         board *= -1
         return self.children[action_idx].select(board, c_puct)
         
-    def expand(self, prior_dist: np.array, actions: np.array, board) -> None:
+    def expand(self, prior_dist: np.array, actions: np.array) -> None:
         self.edges = np.zeros((prior_dist.size, 5))
         self.edges[:, 2] = prior_dist
         self.edges[:, 4] = actions
@@ -49,9 +49,16 @@ class Node:
     
 def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict, use_model=True) -> Tuple[np.array, np.array]:
     if root.leaf:
-        policy, value = get_policy_and_value(net, board, hyperparams)
-        root.expand(policy, get_valid_moves(board), board)
-
+        if use_model:
+            policy, value = get_policy_and_value(net, board, hyperparams)
+        else:
+            policy, value = np.ones(7), 0
+            policy = policy[get_valid_moves(board)]
+            policy /= np.sum(policy)
+        root.expand(policy, get_valid_moves(board))
+    # policy, value = get_policy_and_value(net, board, hyperparams)
+    # print_board(board)
+    # print(value)
     for _ in range(hyperparams['iterations']):
         board_copy = np.copy(board)
         leaf = root.select(board_copy, hyperparams['c_puct'])
@@ -63,9 +70,9 @@ def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dic
                 policy, value = np.ones(7), 0
                 policy = policy[get_valid_moves(board_copy)]
                 policy /= np.sum(policy)
-            
-            leaf.expand(policy, get_valid_moves(board_copy), board_copy)
-            leaf.backpropagate(value)
+                
+            leaf.expand(policy, get_valid_moves(board_copy))
+            leaf.backpropagate(0)
         else:
             leaf.backpropagate(winner)
     return root.get_search_policy(hyperparams['tau'])
