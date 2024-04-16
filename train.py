@@ -51,9 +51,10 @@ def train():
             if len(training_buffer) > 10000:
                 training_buffer = training_buffer[-10000:]
             train_network(net, optimizer, training_buffer, training_hyperparams)
-            if i % 100 == 0:
+            if (i+1) % 50 == 0:
                 torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
 
+    torch.save(net.state_dict(), f'model_{wandb.run.id if wandb.run else 0}.pth')
     if USE_WANDB:
         wandb.finish()
 
@@ -95,7 +96,6 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict):
     network.to(torch.device('cpu'))
     network.eval()
 
-
 def run_episode(network, hyperparams: dict):
     root = Node(None, None)
     board = np.zeros((6, 7))
@@ -118,9 +118,11 @@ def run_episode(network, hyperparams: dict):
         board *= -1
         if not done:
             cur_player *= -1
-
     values = np.ones(len(states))
-    values[1::2] = -1
+    if cur_player == 1:
+        values[1::2] = -1
+    else:
+        values[::2] = -1
     values = list(values * final_value)
     return (zip(states, search_policies, values))
 

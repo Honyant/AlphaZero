@@ -28,7 +28,7 @@ class Node:
         board *= -1
         return self.children[action_idx].select(board, c_puct)
         
-    def expand(self, prior_dist: np.array, actions: np.array) -> None:
+    def expand(self, prior_dist: np.array, actions: np.array, board) -> None:
         self.edges = np.zeros((prior_dist.size, 5))
         self.edges[:, 2] = prior_dist
         self.edges[:, 4] = actions
@@ -47,24 +47,24 @@ class Node:
         N = self.edges[:, 0]
         return N**(1/tau) / np.sum(N**(1/tau)), self.edges[:, 4].astype(int)
     
-def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict) -> Tuple[np.array, np.array]:
+def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dict, use_model=True) -> Tuple[np.array, np.array]:
     if root.leaf:
         policy, value = get_policy_and_value(net, board, hyperparams)
-        root.expand(policy, get_valid_moves(board))
+        root.expand(policy, get_valid_moves(board), board)
+
     for _ in range(hyperparams['iterations']):
         board_copy = np.copy(board)
         leaf = root.select(board_copy, hyperparams['c_puct'])
         winner, terminal = winner_and_terminal(board_copy)
         if not terminal:
-            use_model = True
             if use_model:
                 policy, value = get_policy_and_value(net, board_copy, hyperparams)
             else:
-                policy, value = np.ones(7) / 7, 0
-                policy = (policy * (1 - np.abs(board_copy[0])))
-                policy = policy[policy != 0] / np.sum(policy)
+                policy, value = np.ones(7), 0
+                policy = policy[get_valid_moves(board_copy)]
+                policy /= np.sum(policy)
             
-            leaf.expand(policy, get_valid_moves(board_copy))
+            leaf.expand(policy, get_valid_moves(board_copy), board_copy)
             leaf.backpropagate(value)
         else:
             leaf.backpropagate(winner)

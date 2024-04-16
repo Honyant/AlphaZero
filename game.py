@@ -58,7 +58,7 @@ def print_board(board):
     colors = {
         -1.0: 'red',
         0.0: 'white',
-        1.0: 'yellow'
+        1.0: 'blue'
     }
     # if there are multiple boards, print them all
     if len(board.shape) == 3:

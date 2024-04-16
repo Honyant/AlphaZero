@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 1000,
+        'iterations': 250,
         'c_puct': 4.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -23,23 +23,31 @@ def human_play(network, starting_player, hyperparams : dict):
             print_board(board)
             # Human player's turn
             while True:
-                action = int(input("Enter your move (0-6): "))
+                player_input = input("Enter your move (0-6): ")
+                if player_input == "exit":
+                    return
+                if not player_input.isdigit():
+                    print("Invalid input. Try again.")
+                    continue
+                action = int(player_input)
                 if 0 <= action <= 6 and board[0, action] == 0:
                     break
                 print("Invalid move. Try again.")
         else:
             # AI player's turn
             root = Node(None, None)
-            print(board)
+            # print(board)
             policy, actions = mcts_search(board, root, network, hyperparams)
             print(policy)
             action_idx = np.argmax(policy)
             action = actions[action_idx]
         final_value, done = step(board, action)
-        board *= -1
         if not done:
+            board *= -1
             cur_player *= -1
-        
+    
+    if cur_player == -1:
+        board *= -1
     print_board(board)
     if cur_player == 1:
         print("Player 1 wins!")
@@ -51,12 +59,12 @@ def human_play(network, starting_player, hyperparams : dict):
 if __name__ == "__main__":
     # Load the trained model
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('model_rjv5l647.pth'))
-    net.eval()
     
+    net.load_state_dict(torch.load('model_jt9aifq5.pth'))
+    net.eval()
     # Start the game
-    starting_player = 1 if np.random.rand() < 0.5 else -1
-    # starting_player = 1
+    # starting_player = 1 if np.random.rand() < 0.5 else -1
+    starting_player = -1
     if starting_player == 1:
         print("You are player 1.")
     else:

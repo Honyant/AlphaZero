@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from game import get_valid_moves
 
 
 class ResidualBlock(nn.Module):
@@ -66,7 +67,7 @@ class ValueHead(nn.Module):
 
 
 class AlphaZeroNet(nn.Module):
-    def __init__(self, board_area, num_actions, input_depth, blocks=5, conv_channels=4, head_channels=4, policy_channels=4, value_channels=4):
+    def __init__(self, board_area, num_actions, input_depth, blocks=5, conv_channels=8, head_channels=8, policy_channels=8, value_channels=8):
         super().__init__()
         self.input_conv = InputConvBlock(input_depth, conv_channels)
         self.residual_tower = ResidualTower(conv_channels, blocks)
@@ -77,7 +78,6 @@ class AlphaZeroNet(nn.Module):
         y = self.input_conv(x)
         y = self.residual_tower(y)
         return self.policy_head(y), self.value_head(y)
-
 
 def convert_array_torch(arr):
     if type(arr) == np.ndarray:
@@ -94,8 +94,8 @@ def get_policy_and_value(net: AlphaZeroNet, board: np.array, hyperparams: dict) 
     policy, value = net(convert_array_torch(torch.Tensor(board).unsqueeze(0).unsqueeze(0).to(hyperparams['device'])))
     policy = policy.detach().cpu().numpy().flatten()
     value = value.detach().cpu().numpy().flatten().item()
-    policy = (policy * (1 - np.abs(board[0])))
-    policy = policy[policy != 0] / np.sum(policy)
+    policy = policy[get_valid_moves(board)]
+    policy /= np.sum(policy)
     return policy, value
 
 
