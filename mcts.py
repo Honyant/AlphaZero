@@ -52,7 +52,7 @@ def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dic
         if use_model:
             policy, value = get_policy_and_value(net, board, hyperparams)
         else:
-            policy, value = np.ones(7), 0
+            policy, value = np.ones(7) + np.random.randn(7) * 0.01, 0
             policy = policy[get_valid_moves(board)]
             policy /= np.sum(policy)
         root.expand(policy, get_valid_moves(board))
@@ -67,12 +67,12 @@ def mcts_search(board: np.array, root: Node, net: AlphaZeroNet, hyperparams: dic
             if use_model:
                 policy, value = get_policy_and_value(net, board_copy, hyperparams)
             else:
-                policy, value = np.ones(7), 0
+                policy, value = np.ones(7) + np.random.randn(7) * 0.01, 0
                 policy = policy[get_valid_moves(board_copy)]
                 policy /= np.sum(policy)
                 
             leaf.expand(policy, get_valid_moves(board_copy))
-            leaf.backpropagate(0)
+            leaf.backpropagate(-value)
         else:
             leaf.backpropagate(winner)
     return root.get_search_policy(hyperparams['tau'])

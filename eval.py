@@ -16,12 +16,12 @@ def human_play(network, starting_player, hyperparams : dict):
     board = np.zeros((6,7))
     done = False
     cur_player = starting_player
-    
     while not done:
         if cur_player == 1:
             # MCTS player's turn
             root = Node(None, None)
-            policy, actions = mcts_search(board, root, network, hyperparams, use_model=False)
+            policy, actions = mcts_search(board, root, network, hyperparams, use_model=True)
+            # print(policy)
             action_idx = np.random.choice(len(actions), p=policy)
             # action_idx = np.argmax(policy)
             action = actions[action_idx]
@@ -29,6 +29,8 @@ def human_play(network, starting_player, hyperparams : dict):
             # AI player's turn
             root = Node(None, None)
             policy, actions = mcts_search(board, root, network, hyperparams)
+            # print_board(board)
+            # print(policy)
             action_idx = np.random.choice(len(actions), p=policy)
             # action_idx = np.argmax(policy)
             action = actions[action_idx]
@@ -51,8 +53,8 @@ def evaluate_model(model, games):
     stats = []
     for _ in range(games):
         stats.append(game(model))
-        print(stats[-1])
-    print(mcts_hyperparams)
+        # print(stats[-1])
+    # print(mcts_hyperparams)
     model.train()
     return sum(stats) / games
 

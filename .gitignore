@@ -22,4 +22,4 @@ Thumbs.db
 # wandb
 wandb/
 
-*.pth
+# *.pth
