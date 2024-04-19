@@ -1,8 +1,8 @@
 import numpy as np
 from mcts import Node, mcts_search
-from game import step, print_board
+from game import step, print_board, get_valid_moves
 import torch
-from network import AlphaZeroNet
+from network import AlphaZeroNet, get_policy_and_value
 
 mcts_hyperparams = {
         'iterations': 200,
@@ -28,6 +28,8 @@ def human_play(network, starting_player, hyperparams : dict):
         else:
             # AI player's turn
             root = Node(None, None)
+            # policy, value = get_policy_and_value(network, board, hyperparams)
+            # actions = get_valid_moves(board)
             policy, actions = mcts_search(board, root, network, hyperparams)
             # print_board(board)
             # print(policy)
@@ -46,20 +48,20 @@ def game(net): # returns if the ai won or not
     # Start the game
     starting_player = 1 if np.random.rand() < 0.5 else -1
     result = human_play(net, starting_player, mcts_hyperparams)
-    return 0.5 if result == 0 else int(-starting_player == result)
+    return 0.5 if result == 0 else int(result==-1)
 
 def evaluate_model(model, games, print_game = False):
     model.eval()
-    model.to(torch.device('cpu'))
+    
     stats = []
     for _ in range(games):
         stats.append(game(model))
         if print_game:
             print(stats[-1])
-    model.to(torch.device('cuda'))
+    model.train()
     return sum(stats) / games
 
 if __name__ == "__main__":
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('model_confused_dragon_34.pth'))
+    net.load_state_dict(torch.load('/home/anthony/Documents/AlphaZero/model_drawn_sunset_42.pth'))
     print(f'Win rate: {evaluate_model(net, 100, print_game=True)}')

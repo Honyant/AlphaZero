@@ -20,7 +20,7 @@ training_hyperparams = {
     'batch_size': 1024,
     'num_train_iter': 1,
     'num_episodes': 40000,
-    'num_episodes_per_train': 40,
+    'num_episodes_per_train': 1,
     'num_episodes_per_eval': 80,
     'num_eval_games': 40,
     'num_episodes_per_save': 40,
@@ -28,7 +28,7 @@ training_hyperparams = {
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
-USE_WANDB = False
+USE_WANDB = True
 
 def train():
     training_buffer = []
@@ -123,7 +123,6 @@ def run_episode(network, hyperparams: dict):
         complete_policy = np.zeros(7)
         complete_policy[actions] = policy
         search_policies.append(complete_policy)
-        print("sdagfg")
         board *= -1
         if not done:
             cur_player *= -1

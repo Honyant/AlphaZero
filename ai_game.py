@@ -1,8 +1,8 @@
 import numpy as np
 from mcts import Node, mcts_search
-from game import step, print_board
+from game import step, print_board, get_valid_moves
 import torch
-from network import AlphaZeroNet
+from network import AlphaZeroNet, get_policy_and_value
 
 mcts_hyperparams = {
         'iterations': 500,
@@ -36,7 +36,9 @@ def human_play(network, starting_player, hyperparams : dict):
         else:
             # AI player's turn
             root = Node(None, None)
-            print(board)
+            # print(board)
+            # policy, value = get_policy_and_value(network, board, hyperparams)
+            # actions = get_valid_moves(board)
             policy, actions = mcts_search(board, root, network, hyperparams, use_model=True)
             print(policy)
             action_idx = np.argmax(policy)
@@ -60,7 +62,7 @@ if __name__ == "__main__":
     # Load the trained model
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
     
-    net.load_state_dict(torch.load('model_confused_dragon_34.pth'))
+    net.load_state_dict(torch.load('model_drawn_sunset_42.pth'))
     net.eval()
     # Start the game
     # starting_player = 1 if np.random.rand() < 0.5 else -1
