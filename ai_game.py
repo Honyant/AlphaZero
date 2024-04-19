@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet
 
 mcts_hyperparams = {
-        'iterations': 200,
+        'iterations': 500,
         'c_puct': 4.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -13,7 +13,7 @@ mcts_hyperparams = {
 }
 
 def human_play(network, starting_player, hyperparams : dict):
-    board = np.zeros((6,7))
+    board = np.zeros((6,7)).astype(np.int8)
     done = False
     cur_player = starting_player
     

@@ -7,8 +7,8 @@ from rich.progress import Progress
 import wandb
 from eval import evaluate_model
 mcts_hyperparams = {
-    'iterations': 1000,
-    'c_puct': 4.0,
+    'iterations': 800,
+    'c_puct': 2,
     'tau': 1,
     'device': torch.device('cpu')
     #'mps' if torch.backends.mps.is_available() else
@@ -17,18 +17,18 @@ mcts_hyperparams = {
 training_hyperparams = {
     'lr': 0.01,
     'l2_reg': 0.01,
-    'batch_size': 512,
+    'batch_size': 1024,
     'num_train_iter': 1,
-    'num_episodes': 4000,
-    'num_episodes_per_train': 2,
-    'num_episodes_per_eval': 50,
-    'num_eval_games': 20,
-    'num_episodes_per_save': 20,
+    'num_episodes': 40000,
+    'num_episodes_per_train': 40,
+    'num_episodes_per_eval': 80,
+    'num_eval_games': 40,
+    'num_episodes_per_save': 40,
     'max_training_buffer_size': 10000,
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
-USE_WANDB = True
+USE_WANDB = False
 
 def train():
     training_buffer = []
@@ -107,7 +107,7 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict, episod
 
 def run_episode(network, hyperparams: dict):
     root = Node(None, None)
-    board = np.zeros((6, 7))
+    board = np.zeros((6, 7)).astype(np.int8)
     done = False
     states = []
     search_policies = []
@@ -123,6 +123,7 @@ def run_episode(network, hyperparams: dict):
         complete_policy = np.zeros(7)
         complete_policy[actions] = policy
         search_policies.append(complete_policy)
+        print("sdagfg")
         board *= -1
         if not done:
             cur_player *= -1

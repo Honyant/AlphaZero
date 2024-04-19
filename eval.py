@@ -13,17 +13,17 @@ mcts_hyperparams = {
 }
 
 def human_play(network, starting_player, hyperparams : dict):
-    board = np.zeros((6,7))
+    board = np.zeros((6,7)).astype(np.int8)
     done = False
     cur_player = starting_player
     while not done:
         if cur_player == 1:
             # MCTS player's turn
             root = Node(None, None)
-            policy, actions = mcts_search(board, root, network, hyperparams, use_model=True)
+            policy, actions = mcts_search(board, root, network, hyperparams, use_model=False)
             # print(policy)
-            action_idx = np.random.choice(len(actions), p=policy)
-            # action_idx = np.argmax(policy)
+            # action_idx = np.random.choice(len(actions), p=policy)
+            action_idx = np.argmax(policy)
             action = actions[action_idx]
         else:
             # AI player's turn
@@ -31,8 +31,8 @@ def human_play(network, starting_player, hyperparams : dict):
             policy, actions = mcts_search(board, root, network, hyperparams)
             # print_board(board)
             # print(policy)
-            action_idx = np.random.choice(len(actions), p=policy)
-            # action_idx = np.argmax(policy)
+            # action_idx = np.random.choice(len(actions), p=policy)
+            action_idx = np.argmax(policy)
             action = actions[action_idx]
         final_value, done = step(board, action)
         if not done:
@@ -48,17 +48,18 @@ def game(net): # returns if the ai won or not
     result = human_play(net, starting_player, mcts_hyperparams)
     return 0.5 if result == 0 else int(-starting_player == result)
 
-def evaluate_model(model, games):
+def evaluate_model(model, games, print_game = False):
     model.eval()
+    model.to(torch.device('cpu'))
     stats = []
     for _ in range(games):
         stats.append(game(model))
-        # print(stats[-1])
-    # print(mcts_hyperparams)
-    model.train()
+        if print_game:
+            print(stats[-1])
+    model.to(torch.device('cuda'))
     return sum(stats) / games
 
 if __name__ == "__main__":
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('model_hondhzd7.pth'))
-    print(f'Win rate: {evaluate_model(net, 100)}')
+    net.load_state_dict(torch.load('model_confused_dragon_34.pth'))
+    print(f'Win rate: {evaluate_model(net, 100, print_game=True)}')
