@@ -4,5 +4,7 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="jdk" jdkName="AlphaZero" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="d3.v5" level="application" />
+    <orderEntry type="library" name="d3.v7" level="application" />
   </component>
 </module>

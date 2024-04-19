@@ -36,7 +36,7 @@ def human_play(network, starting_player, hyperparams : dict):
         else:
             # AI player's turn
             root = Node(None, None)
-            # print(board)
+            print(board)
             policy, actions = mcts_search(board, root, network, hyperparams, use_model=True)
             print(policy)
             action_idx = np.argmax(policy)
