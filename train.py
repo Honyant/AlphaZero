@@ -7,8 +7,8 @@ from rich.progress import Progress
 import wandb
 from eval import evaluate_model
 mcts_hyperparams = {
-    'iterations': 1000,
-    'c_puct': 4.0,
+    'iterations': 800,
+    'c_puct': 2,
     'tau': 1,
     'device': torch.device('cpu')
     #'mps' if torch.backends.mps.is_available() else
@@ -17,13 +17,13 @@ mcts_hyperparams = {
 training_hyperparams = {
     'lr': 0.01,
     'l2_reg': 0.01,
-    'batch_size': 512,
+    'batch_size': 1024,
     'num_train_iter': 1,
-    'num_episodes': 4000,
-    'num_episodes_per_train': 2,
-    'num_episodes_per_eval': 50,
-    'num_eval_games': 20,
-    'num_episodes_per_save': 20,
+    'num_episodes': 40000,
+    'num_episodes_per_train': 40,
+    'num_episodes_per_eval': 80,
+    'num_eval_games': 40,
+    'num_episodes_per_save': 40,
     'max_training_buffer_size': 10000,
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))

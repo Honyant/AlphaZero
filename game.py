@@ -1,19 +1,9 @@
 from typing import Tuple
 import numpy as np
+import numba as nb
 from numba import jit
 from termcolor import colored
 
-def step(board: np.array, move: int) -> Tuple[int, bool]: # reward, done
-    for i in range(5, -1, -1):
-        if board[i][move] == 0:
-            board[i][move] = 1 # you are always the player
-            break
-    winner, terminal = winner_and_terminal(board)
-    return (winner, terminal)
-
-@jit(nopython=True)
-def get_valid_moves(board: np.array) -> np.array:
-    return np.where(board[0] == 0)[0]
 
 @jit(nopython=True)
 def get_winner(board: np.array) -> int:
@@ -44,13 +34,26 @@ def get_winner(board: np.array) -> int:
                 return board[row][col]
             elif abs(neg_slope_sum) == 4:
                 return board[row+3][col]
+    return 2
 
-    return None
+@jit(nopython=True)
+def get_valid_moves(board: np.array) -> np.array:
+    return np.where(board[0] == 0)[0]
 
+@jit(nb.types.Tuple((nb.int8, nb.boolean))(nb.int8[:, :]), nopython=True)
 def winner_and_terminal(board: np.array) -> Tuple[int, bool]:
     full_board = len(get_valid_moves(board)) == 0
     winner = get_winner(board)
-    return 0 if winner == None else 1, winner != None or full_board
+    return 0 if winner == 2 else 1, winner != 2 or full_board
+
+@jit(nb.types.Tuple((nb.int8, nb.boolean))(nb.int8[:, :], nb.int8), nopython=True)
+def step(board: np.array, move: int) -> Tuple[int, bool]: # reward, done
+    for i in range(5, -1, -1):
+        if board[i][move] == 0:
+            board[i][move] = 1 # you are always the player
+            break
+    winner, terminal = winner_and_terminal(board)
+    return (winner, terminal)
 
 def print_board(board):
     
