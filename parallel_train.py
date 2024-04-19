@@ -110,16 +110,6 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict, episod
     # network.to(torch.device('cpu'))
     network.eval()
     
-# def get_policy_and_value(net: AlphaZeroNet, boards: np.array, hyperparams: dict) -> int:
-#     # policy, value = net(torch.Tensor(board.flatten()).unsqueeze(0).to(hyperparams['device']))
-#     policy, value = net(convert_array_torch(torch.Tensor(boards).unsqueeze(1).to(hyperparams['device'])))
-#     policy = policy.detach().cpu().numpy().flatten()
-#     value = value.detach().cpu().numpy().flatten()
-#     policy = policy[get_valid_moves(board)]
-#     policy /= np.sum(policy)
-#     return policy, value
-
-
 def worker(process_id, hyperparams, batch_queue, barrier):
     np.random.seed(process_id)
     states = []
@@ -130,7 +120,6 @@ def worker(process_id, hyperparams, batch_queue, barrier):
     personal_done = False
     count = 0
     while not personal_done:
-        
         states.append(np.copy(board))
         for n in range(hyperparams['iterations']):
             count +=1
@@ -230,58 +219,7 @@ def run_episodes(num_parallel, net, hyperparams: dict):
         all_states.extend(states)
         all_search_policies.extend(search_policies)
         all_values.extend(values)
-    # print(len(all_states), len(all_search_policies), len(all_values))
     return (zip(all_states, all_search_policies, all_values))
-
-# def run_episodes(num_parallel, net, hyperparams: dict):
-#     root = [Node(None, None) for _ in range(num_parallel)]
-#     boards = [np.zeros((6, 7)).astype(np.int8) for _ in range(num_parallel)]
-#     done = [False for _ in range(num_parallel)]
-#     states = [[] for _ in range(num_parallel)]
-#     search_policies = [[] for _ in range(num_parallel)]
-#     final_value = [0 for _ in range(num_parallel)]
-#     cur_player = [1 for _ in range(num_parallel)]
-#     mcts_policy, mcts_value = get_policy_and_value(net, boards[0], hyperparams)
-#     for i in range(num_parallel):
-#         root[i].expand(mcts_policy, np.arange(7))
-        
-#     with multiprocessing.Pool(num_parallel) as pool: 
-#         while not all(done):
-#             for i in range(num_parallel):
-#                 if not done[i]:
-#                     states[i].append(np.copy(boards[i]))
-#             for _ in range(hyperparams['iterations']):
-#                 board_copy = np.copy(board)
-#                 leaf = root.select(board_copy, hyperparams['c_puct'])
-#                 winner, terminal = winner_and_terminal(board_copy)
-#                 mcts_policy, mcts_value = net(convert_array_torch(torch.Tensor(boards).unsqueeze(1).to(hyperparams['device'])))
-#                 mcts_policy = mcts_policy.detach().cpu().numpy().flatten()
-#                 value = value.detach().cpu().numpy().flatten()
-#                 mcts_policy = mcts_policy[get_valid_moves(board)]
-#                 mcts_policy /= np.sum(mcts_policy)
-#                 if not terminal:
-#                     leaf.expand(mcts_policy, get_valid_moves(board_copy))
-#                     leaf.backpropagate(-mcts_value)
-#                 else:
-#                     leaf.backpropagate(winner)
-#             policy, actions = root.get_search_policy(hyperparams['tau'])
-#             action_idx = np.random.choice(len(actions), p=policy)
-#             final_value, done = step(board, actions[action_idx])
-#             root = root.children[action_idx]
-#             complete_policy = np.zeros(7)
-#             complete_policy[actions] = policy
-#             search_policies.append(complete_policy)
-#             board *= -1
-#             if not done:
-#                 cur_player *= -1
-#     # states.append(np.copy(board))
-#     values = np.ones(len(states))
-#     if cur_player == 1:
-#         values[1::2] = -1
-#     else:
-#         values[::2] = -1
-#     values = list(values * final_value)
-#     return (zip(states, search_policies, values))
 
 if __name__ == "__main__":
     train()

@@ -47,16 +47,17 @@ def human_play(network, starting_player, hyperparams : dict):
         if not done:
             board *= -1
             cur_player *= -1
+    print(cur_player, final_value, done)
     
     if cur_player == -1:
         board *= -1
     print_board(board)
-    if cur_player == 1:
+    if final_value == 0:
+        print("It's a draw!")
+    elif cur_player == 1:
         print("Player 1 wins!")
     elif cur_player == -1:
         print("Player 2 wins!")
-    else:
-        print("It's a draw!")
 
 if __name__ == "__main__":
     # Load the trained model

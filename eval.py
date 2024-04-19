@@ -5,7 +5,7 @@ import torch
 from network import AlphaZeroNet, get_policy_and_value
 
 mcts_hyperparams = {
-        'iterations': 200,
+        'iterations': 500,
         'c_puct': 4.0,
         'tau': 1,
         'device': torch.device('cpu')
@@ -52,6 +52,7 @@ def game(net): # returns if the ai won or not
 
 def evaluate_model(model, games, print_game = False):
     model.eval()
+    model.to(mcts_hyperparams['device'])
     
     stats = []
     for _ in range(games):
@@ -63,5 +64,5 @@ def evaluate_model(model, games, print_game = False):
 
 if __name__ == "__main__":
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('/home/anthony/Documents/AlphaZero/model_drawn_sunset_42.pth'))
+    net.load_state_dict(torch.load('model_drawn_sunset_42.pth'))
     print(f'Win rate: {evaluate_model(net, 100, print_game=True)}')
