@@ -50,12 +50,13 @@ def game(net): # returns if the ai won or not
 
 def evaluate_model(model, games, print_game = False):
     model.eval()
+    model.to(torch.device('cpu'))
     stats = []
     for _ in range(games):
         stats.append(game(model))
         if print_game:
             print(stats[-1])
-    model.train()
+    model.to(torch.device('cuda'))
     return sum(stats) / games
 
 if __name__ == "__main__":

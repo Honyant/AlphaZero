@@ -4,7 +4,7 @@ import numpy as np
 from game import *
 from network import AlphaZeroNet, get_policy_and_value
 import torch
-import time
+ 
 
 class Node:
     def __init__(self, parent: Node, action_idx: int) -> None:

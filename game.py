@@ -64,6 +64,7 @@ def print_board(board):
         1.0: 'blue'
     }
     # if there are multiple boards, print them all
+    string = ''
     if len(board.shape) == 3:
         rows, cols = board.shape[1:]
         for b in range(board.shape[0]):
@@ -84,7 +85,9 @@ def print_board(board):
             value = board[row][col]
             color = colors[value]
             piece = '●'
-            print(colored(piece, color), end=' ')
-        print()
+            string += colored(piece, color) + ' '
+            # print(colored(piece, color), end=' ')
+        string += '\n'
+    print(string)
     
 

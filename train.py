@@ -28,7 +28,7 @@ training_hyperparams = {
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
-USE_WANDB = True
+USE_WANDB = False
 
 def train():
     training_buffer = []
@@ -107,7 +107,7 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict, episod
 
 def run_episode(network, hyperparams: dict):
     root = Node(None, None)
-    board = np.zeros((6, 7))
+    board = np.zeros((6, 7)).astype(np.int8)
     done = False
     states = []
     search_policies = []
@@ -123,6 +123,7 @@ def run_episode(network, hyperparams: dict):
         complete_policy = np.zeros(7)
         complete_policy[actions] = policy
         search_policies.append(complete_policy)
+        print("sdagfg")
         board *= -1
         if not done:
             cur_player *= -1
