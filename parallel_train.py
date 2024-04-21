@@ -7,9 +7,10 @@ from rich.progress import Progress
 import wandb
 from eval import evaluate_model
 import multiprocessing
+import time
 mcts_hyperparams = {
     'iterations': 200,
-    'c_puct': 2,
+    'c_puct': 4,
     'tau': 1,
     'device': torch.device('cuda')
     #'mps' if torch.backends.mps.is_available() else
@@ -22,7 +23,7 @@ training_hyperparams = {
     'num_train_iter': 4,
     'num_episodes': 800,
     'num_episodes_per_train': 1,
-    'num_episodes_per_eval': 10,
+    'num_episodes_per_eval': 40,
     'num_eval_games': 40,
     'num_episodes_per_save': 10,
     'max_training_buffer_size': 20000,
@@ -30,7 +31,7 @@ training_hyperparams = {
     'device': torch.device(
         'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu'))
 }
-USE_WANDB = True
+USE_WANDB = False
 
 def train():
     training_buffer = []
@@ -110,7 +111,7 @@ def train_network(network, optimizer, training_buffer, hyperparams: dict, episod
     # network.to(torch.device('cpu'))
     network.eval()
     
-def worker(process_id, hyperparams, batch_queue, barrier):
+def worker(process_id, hyperparams, out_board, result_policy, result_value, batch_queue, barrier):
     np.random.seed(process_id)
     states = []
     search_policies = []
@@ -124,19 +125,21 @@ def worker(process_id, hyperparams, batch_queue, barrier):
         for n in range(hyperparams['iterations']):
             count +=1
             board_copy = np.copy(board)
-            
             leaf = root.select(board_copy, hyperparams['c_puct'])
             winner, terminal = winner_and_terminal(board_copy)
-            batch_queue.put((process_id, board_copy))
+            out_board[process_id] = board_copy
             barrier.wait()
             barrier.wait()
-            mcts_policy, mcts_value = batch_queue.get()
-            barrier.wait()
-            # if n%100 == 0 and (process_id == 0 or process_id == 1):
-            #     print(n)
-            #     print_board(board_copy)
+            mcts_policy = result_policy[process_id]
+            mcts_value = result_value[process_id]
+            # barrier.wait()
+            if n%100 == 0 and (process_id == 0 or process_id == 1):
+                print(n)
+                print_board(board_copy)
             if not terminal:
                 mcts_policy = mcts_policy[get_valid_moves(board_copy)]
+                if np.sum(mcts_policy) == 0:
+                    mcts_policy = np.ones(mcts_policy.shape[0])
                 mcts_policy /= np.sum(mcts_policy)
                 leaf.expand(mcts_policy, get_valid_moves(board_copy))
                 leaf.backpropagate(-mcts_value)
@@ -164,50 +167,35 @@ def worker(process_id, hyperparams, batch_queue, barrier):
     
     while count < 42 * hyperparams['iterations']:
         count +=1
-        batch_queue.put((process_id, board))
         barrier.wait()
-        barrier.wait()
-        mcts_policy, mcts_value = batch_queue.get()
         barrier.wait()
     
     barrier.wait()
     batch_queue.put((states, search_policies, values))
 
 def run_episodes(num_parallel, net, hyperparams: dict):
-    # done = multiprocessing.Value('i', False)
     net.to(hyperparams['device'])
     batch_queue = multiprocessing.Queue()
     barrier = multiprocessing.Barrier(num_parallel + 1)
     states = []
+    out_board = np.zeros((num_parallel, 6, 7)).astype(np.int8)
+    result_policy = np.zeros((num_parallel, 7))
+    result_value = np.zeros(num_parallel)
     search_policies = []
-    final_value = 0
     processes = []
     for i in range(num_parallel):
-        process = multiprocessing.Process(target=worker, args=(i, hyperparams, batch_queue, barrier))
+        process = multiprocessing.Process(target=worker, args=(i, hyperparams, out_board, result_policy, result_value, batch_queue, barrier))
         processes.append(process)
         process.start()
     count = 0
     while count < 42 * hyperparams['iterations']:
-        count +=1
-        batch_boards = []
-        batch_ids = []
+        count += 1
         barrier.wait()
-        for i in range(num_parallel):
-            process_id, board = batch_queue.get()
-            batch_boards.append(board)
-            batch_ids.append(process_id)
+        mcts_policy, mcts_value = net(convert_array_torch(torch.Tensor(out_board).unsqueeze(1).to(hyperparams['device'])))
+        result_policy = mcts_policy.detach().cpu().numpy()
+        result_value = mcts_value.detach().cpu().numpy().flatten()
         barrier.wait()
-            
-        # barrier1.wait()  # Wait for all worker processes to put their boards into the queue
-
-        batch_boards = np.array(batch_boards)
-        mcts_policy, mcts_value = net(convert_array_torch(torch.Tensor(batch_boards).unsqueeze(1).to(hyperparams['device'])))
-        mcts_policy = mcts_policy.detach().cpu().numpy()
-        mcts_value = mcts_value.detach().cpu().numpy().flatten()
-        
-        for i, process_id in enumerate(batch_ids):
-            batch_queue.put((mcts_policy[i], mcts_value[i]))
-        barrier.wait()
+        # barrier.wait()
         
     all_states = []
     all_search_policies = []
