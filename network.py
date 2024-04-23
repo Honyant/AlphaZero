@@ -67,8 +67,8 @@ class ValueHead(nn.Module):
 
 
 class AlphaZeroNet(nn.Module):
-    def __init__(self, board_area, num_actions, input_depth, blocks=8, conv_channels=32, head_channels=32,
-                 policy_channels=32, value_channels=32):
+    def __init__(self, board_area, num_actions, input_depth, blocks=5, conv_channels=8, head_channels=8,
+                 policy_channels=8, value_channels=8):
         super().__init__()
         self.input_conv = InputConvBlock(input_depth, conv_channels)
         self.residual_tower = ResidualTower(conv_channels, blocks)

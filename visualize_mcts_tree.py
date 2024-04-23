@@ -46,7 +46,8 @@ def tree():
         'iterations': 1000,
         'c_puct': 1.0,
         'tau': 1,
-        'device': torch.device('cpu')
+        'device': torch.device('cpu'),
+        'rollouts': 1000,
         # 'mps' if torch.backends.mps.is_available() else
     }
 
@@ -57,14 +58,14 @@ def tree():
         [-0., -0., 1., -1., -0., 1., -0.],
         [-0., -0., -1., 1., -0., -1., -1.],
         [-0., -1., -1., 1., -1., -1., -1.]
-    ])
+    ]).astype(np.int8)
 
     root = Node(None, None)
 
     net = AlphaZeroNet(board_area=42, num_actions=7, input_depth=2).to(mcts_hyperparams['device'])
-    net.load_state_dict(torch.load('model_confused_dragon_34.pth'))
+    net.load_state_dict(torch.load('model_drawn_sunset_42.pth'))
 
-    mcts_search(board, root, net, mcts_hyperparams, use_model=True)
+    mcts_search(board, root, net, mcts_hyperparams, use_model=False)
     return jsonify(traverse(root, board))
 
 

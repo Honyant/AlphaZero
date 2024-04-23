@@ -4,11 +4,13 @@ from game import step, print_board, get_valid_moves
 import torch
 from network import AlphaZeroNet, get_policy_and_value
 
+
 mcts_hyperparams = {
         'iterations': 200,
-        'c_puct': 4.0,
+        'c_puct': 1.0,
         'tau': 1,
-        'device': torch.device('cpu')
+        'device': torch.device('cpu'),
+        'rollouts': 1000
         #'mps' if torch.backends.mps.is_available() else 
 }
 
