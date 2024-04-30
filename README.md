@@ -15,23 +15,20 @@ This project is aimed at replicating DeepMind's AlphaZero algorithm, specificall
 To train the AI, run the `train.py` file:
 
 ```bash
-python -m train.py
+python train.py
 ```
 
-## Contribution Guidelines
+To train the AI in parallel, run the `parallel_train.py` file:
 
-Contributions are welcome! To contribute:
+```bash
+python parallel_train.py
+```
 
-1. Fork the repository.
-2. Create a new branch for your changes.
-3. Make your changes in your branch.
-4. Submit a pull request.
+To play against the AI, run the `ai_game.py` file:
 
-Please follow the existing code style and include tests for any new features or changes.
-
-## License
-
-This project is licensed under the MIT License.
+```bash
+python ai_game.py
+```
 
 ## Acknowledgements and Credits
 
